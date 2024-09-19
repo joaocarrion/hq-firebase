@@ -13,7 +13,14 @@ service cloud.firestore {
     match /user_profiles/{$id} {
     	allow read, write: if request.auth.uid == $id
     }
-    
+
+    match /invitations/{$id} {
+      allow read: if request.auth != null 
+                  && request.auth.token.email == resource.data.email;
+
+      allow create: if canInvite(request.resource.data.group);
+    }
+
     // Groups Collection
     match /groups/{groupId} {
       allow create: if request.auth != null; // Anyone can create a group
@@ -36,6 +43,11 @@ service cloud.firestore {
 
     function isGroupAdmin() {
       return request.auth != null && request.auth.uid in resource.data.admins;
+    }
+
+    function canInvite(groupId) {
+      return request.auth != null &&
+         request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.admins
     }
 
     // function isAppAdmin() {
