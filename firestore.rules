@@ -8,6 +8,7 @@ service cloud.firestore {
 
     match /public/latest/{document=**} {
       allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.email == 'joao.carrion@gmail.com'
     }
         
     match /user_profiles/{$id} {
@@ -15,10 +16,10 @@ service cloud.firestore {
     }
 
     match /invitations/{$id} {
-      allow read: if request.auth != null 
-                  && request.auth.token.email == resource.data.email;
+      allow get: if request.auth != null;
 
-      allow create: if canInvite(request.resource.data.group);
+      // can create if it is a group admin for the group
+      allow create: if canInvite(request.resource.data.id);
     }
 
     // Groups Collection
@@ -49,9 +50,5 @@ service cloud.firestore {
       return request.auth != null &&
          request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.admins
     }
-
-    // function isAppAdmin() {
-    //   return request.auth.token.role == "admin";
-    // }
   }
 }
