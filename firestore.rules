@@ -8,18 +8,27 @@ service cloud.firestore {
 
     match /public/latest/{document=**} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'joao.carrion@gmail.com'
+      allow write: if isGeneralManager();
     }
-        
+
+    match /public/latest/updatedProducts/{document=**} {
+      allow create: if isGroupMember(request.resource.data.group);
+    }
+
+    match /public/latest/updatedCategories/{document=**} {
+      allow create: if isGroupMember(request.resource.data.group);
+    }
+
+    match /public/latest/updatedStores/{document=**} {
+      allow create: if isGroupMember(request.resource.data.group);
+    }
+
     match /user_profiles/{$id} {
     	allow read, write: if request.auth.uid == $id
     }
 
     match /invitations/{$id} {
       allow get: if request.auth != null;
-
-      // can create if it is a group admin for the group
-      allow create: if canInvite(request.resource.data.id);
     }
 
     // Groups Collection
@@ -46,9 +55,13 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid in resource.data.admins;
     }
 
-    function canInvite(groupId) {
-      return request.auth != null &&
-         request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.admins
+    function isGeneralManager() {
+      return request.auth != null && (request.auth.token.email == 'joao.carrion@gmail.com' || request.auth.token.email == 'silvia_am@hotmail.com');
     }
+
+    // function canInvite(groupId) {
+    //   return request.auth != null &&
+    //      request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.admins
+    // }
   }
 }
