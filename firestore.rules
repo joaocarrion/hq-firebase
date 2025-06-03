@@ -5,22 +5,29 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+    
+    match /importErrors/{document=**} {
+    	allow write: if request.auth != null;
+    }
 
     match /public/latest/{document=**} {
       allow read: if request.auth != null;
-      allow write: if isGeneralManager();
+      allow write: if request.auth != null;
     }
 
     match /public/latest/updatedProducts/{document=**} {
       allow create: if isGroupMember(request.resource.data.group);
+      allow read, write: if isGeneralManager();
     }
 
     match /public/latest/updatedCategories/{document=**} {
       allow create: if isGroupMember(request.resource.data.group);
+      allow read, write: if isGeneralManager();
     }
 
     match /public/latest/updatedStores/{document=**} {
       allow create: if isGroupMember(request.resource.data.group);
+      allow read, write: if isGeneralManager();
     }
 
     match /user_profiles/{$id} {
@@ -56,7 +63,9 @@ service cloud.firestore {
     }
 
     function isGeneralManager() {
-      return request.auth != null && (request.auth.token.email == 'joao.carrion@gmail.com' || request.auth.token.email == 'silvia_am@hotmail.com');
+      return request.auth != null && (request.auth.token.email == 'joao.carrion@gmail.com' ||
+      	request.auth.token.email == 'silvia_am@hotmail.com' ||
+        request.auth.token.email == 'joao.carrion+1@gmail.com');
     }
 
     // function canInvite(groupId) {
