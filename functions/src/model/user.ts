@@ -1,6 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import { FBServices, services } from "./base.js";
 import { Group } from "./group.js";
+import { FieldValue } from "firebase-admin/firestore";
 
 const userProfiles = services.db.collection("user_profiles");
 
@@ -99,5 +100,14 @@ export const leaveGroup = onCall(async (request) => {
             groups: remainingGroups,
             defaultGroup: first
         });
+
+        if (group.isEmpty()) {
+            // lets add the group to a removal queue
+            const ref = services.db.collection("groupsForRemoval").doc(group.gid);
+            transaction.set(ref, {
+                date: FieldValue.serverTimestamp(),
+                removedBy: uid
+            });
+        }
     });
 });

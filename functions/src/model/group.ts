@@ -2,6 +2,7 @@ import { FieldValue, Transaction } from "firebase-admin/firestore";
 import { FBServices, services } from "./base.js";
 import { UserProfileData } from "./user.js";
 import { onCall } from "firebase-functions/v2/https";
+import { Invitation } from "./invitation.js";
 
 export interface GroupUserProfile {
   id: string;
@@ -40,27 +41,35 @@ export class Group {
     }
   }
 
-  addUser(profile: UserProfileData, invitationId: string, transaction: FirebaseFirestore.Transaction) {
+  addUser(profile: UserProfileData, invitation: Invitation, transaction: FirebaseFirestore.Transaction) {
     transaction.update(this.ref, {
       users: FieldValue.arrayUnion(profile.id),
       profiles: FieldValue.arrayUnion({
         id: profile.id,
         email: profile.email,
-        displayName: profile.displayName
+        displayName: profile.displayName,
+        joinedAt: FieldValue.serverTimestamp(),
+        invitedBy: invitation.data.invitedBy
       }),
-      invitations: FieldValue.arrayRemove(invitationId)
+      invitations: FieldValue.arrayRemove(invitation.id)
     });
   }
   
   removeUser(uid: string, transaction: Transaction) {
     if (!this.data?.profiles) throw FBServices.errors.notFound();
     this.data.profiles = this.data.profiles.filter(p => p.id !== uid);
+    this.data.users = this.data.users.filter(id => id !== uid);
+    this.data.admins = this.data.admins.filter(id => id !== uid);
 
     transaction.update(this.ref, {
       users: FieldValue.arrayRemove(uid),
       admins: FieldValue.arrayRemove(uid),
       profiles: this.data.profiles
     })
+  }
+
+  isEmpty() {
+    return this.data != undefined && this.data.users.length == 0 && this.data.admins.length == 0;
   }
 }
 

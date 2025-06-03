@@ -14,7 +14,7 @@ interface InvitationRequest {
   user: UserProfileData
 }
 
-interface InvitationData {
+export interface InvitationData {
   groupId: string;
   name: string;
   description: string;
@@ -23,7 +23,7 @@ interface InvitationData {
   createdAt?: Timestamp;
 }
 
-class Invitation {
+export class Invitation {
   id: string;
   data: InvitationData;
   ref: DocumentReference;
@@ -90,14 +90,17 @@ export const acceptInvitation = onCall(async (request) => {
       const existing = profileDoc.data() as UserProfileData;
       const updatedProfile: UserProfileData = {
         ...existing,
-        ...baseProfile,
+        name: baseProfile.name,
+        displayName: baseProfile.displayName,
+        email: baseProfile.email,
+        defaultGroup: existing.defaultGroup ?? group.gid,
         groups: Array.from(new Set([...(existing.groups ?? []), group.gid]))
       };
 
       transaction.set(profileRef, updatedProfile, { merge: true });
     }
 
-    group.addUser(baseProfile, invitation.id, transaction);
+    group.addUser(baseProfile, invitation, transaction);
     transaction.delete(invitation.ref);
   });
 });

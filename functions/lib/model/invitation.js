@@ -2,7 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { FBServices, services } from "./base.js";
 import { Group } from "./group.js";
-class Invitation {
+export class Invitation {
     id;
     data;
     ref;
@@ -59,12 +59,15 @@ export const acceptInvitation = onCall(async (request) => {
             const existing = profileDoc.data();
             const updatedProfile = {
                 ...existing,
-                ...baseProfile,
+                name: baseProfile.name,
+                displayName: baseProfile.displayName,
+                email: baseProfile.email,
+                defaultGroup: existing.defaultGroup ?? group.gid,
                 groups: Array.from(new Set([...(existing.groups ?? []), group.gid]))
             };
             transaction.set(profileRef, updatedProfile, { merge: true });
         }
-        group.addUser(baseProfile, invitation.id, transaction);
+        group.addUser(baseProfile, invitation, transaction);
         transaction.delete(invitation.ref);
     });
 });

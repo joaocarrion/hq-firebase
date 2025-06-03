@@ -23,26 +23,33 @@ export class Group {
             this.data = snapshot.data();
         }
     }
-    addUser(profile, invitationId, transaction) {
+    addUser(profile, invitation, transaction) {
         transaction.update(this.ref, {
             users: FieldValue.arrayUnion(profile.id),
             profiles: FieldValue.arrayUnion({
                 id: profile.id,
                 email: profile.email,
-                displayName: profile.displayName
+                displayName: profile.displayName,
+                joinedAt: FieldValue.serverTimestamp(),
+                invitedBy: invitation.data.invitedBy
             }),
-            invitations: FieldValue.arrayRemove(invitationId)
+            invitations: FieldValue.arrayRemove(invitation.id)
         });
     }
     removeUser(uid, transaction) {
         if (!this.data?.profiles)
             throw FBServices.errors.notFound();
         this.data.profiles = this.data.profiles.filter(p => p.id !== uid);
+        this.data.users = this.data.users.filter(id => id !== uid);
+        this.data.admins = this.data.admins.filter(id => id !== uid);
         transaction.update(this.ref, {
             users: FieldValue.arrayRemove(uid),
             admins: FieldValue.arrayRemove(uid),
             profiles: this.data.profiles
         });
+    }
+    isEmpty() {
+        return this.data != undefined && this.data.users.length == 0 && this.data.admins.length == 0;
     }
 }
 export const createInvitation = onCall(async (request) => {
