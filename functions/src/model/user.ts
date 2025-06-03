@@ -34,7 +34,6 @@ export const removeUser = onCall(async (request) => {
         const group = new Group(data.gid);
         await group.get(transaction);
 
-        console.log(group.data?.admins);
         if (!group.data?.admins.includes(uid)) {
             throw FBServices.errors.permissionDenied();
         }
@@ -107,6 +106,72 @@ export const leaveGroup = onCall(async (request) => {
             transaction.set(ref, {
                 date: FieldValue.serverTimestamp(),
                 removedBy: uid
+            });
+        }
+    });
+});
+
+export const eraseUser = onCall(async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw FBServices.errors.unauthenticated();
+    }
+
+    await services.db.runTransaction(async (transaction) => {
+        const profileRef = userProfiles.doc(uid);
+        const userSnap = await transaction.get(profileRef);
+        if (!userSnap.exists) {
+            throw FBServices.errors.notFound();
+        }
+
+        const userData = userSnap.data() as UserProfileData;
+        const userGroups = userData.groups ?? [];
+
+        for (const gid of userGroups) {
+            const group = new Group(gid);
+            await group.get(transaction);
+
+            if (!group.data?.users.includes(uid)) continue;
+
+            await group.removeUser(uid, transaction);
+
+            if (group.isEmpty()) {
+                const ref = services.db.collection("groupsForRemoval").doc(group.gid);
+                transaction.set(ref, {
+                    date: FieldValue.serverTimestamp(),
+                    removedBy: uid
+                });
+            }
+        }
+
+        const clientIP = request.rawRequest.ip ?? request.rawRequest.headers["x-forwarded-for"];
+        const userAgent = request.rawRequest.headers["user-agent"];
+
+        const deletedUserRef = services.db.collection("deletedUsers").doc(uid);
+        transaction.set(deletedUserRef, {
+            uid: uid,
+            profile: userData,
+            deletedOn: FieldValue.serverTimestamp(),
+            clientIP: clientIP,
+            userAgent: userAgent,
+        });
+
+        transaction.delete(profileRef);
+
+        const reason = request.data?.reason;
+        const MAX_TEXT_LENGTH = 500;
+        const rawText = request.data?.text ?? "";
+        const text = rawText.length > MAX_TEXT_LENGTH
+            ? rawText.substring(0, MAX_TEXT_LENGTH) + "…" // add ellipsis if cut
+            : rawText;
+
+        if (reason) {
+            const reasonDoc = services.db.collection("reasons").doc();
+            transaction.set(reasonDoc, {
+                reason,
+                text,
+                type: "delete-account",
+                createdAt: FieldValue.serverTimestamp()
             });
         }
     });
