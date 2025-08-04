@@ -82,6 +82,7 @@ export const acceptInvitation = onCall(async (request) => {
       email: request.auth?.token.email ?? invitationRequest.user.email,
       defaultGroup: group.gid,
       groups: [group.gid],
+      lastUpdated: FieldValue.serverTimestamp()
     };
 
     if (!profileDoc.exists) {
@@ -94,7 +95,8 @@ export const acceptInvitation = onCall(async (request) => {
         displayName: baseProfile.displayName,
         email: baseProfile.email,
         defaultGroup: existing.defaultGroup ?? group.gid,
-        groups: Array.from(new Set([...(existing.groups ?? []), group.gid]))
+        groups: Array.from(new Set([...(existing.groups ?? []), group.gid])),
+        lastUpdated: FieldValue.serverTimestamp()
       };
 
       transaction.set(profileRef, updatedProfile, { merge: true });

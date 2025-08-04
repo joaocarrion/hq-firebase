@@ -17,6 +17,7 @@ export interface GroupData {
   profiles: GroupUserProfile[];
   admins: string[];
   users: string[];
+  lastUpdated: Timestamp | FieldValue | null
 }
 
 export class Group {
@@ -51,7 +52,8 @@ export class Group {
         joinedAt: Timestamp.now(),
         invitedBy: invitation.data.invitedBy
       }),
-      invitations: FieldValue.arrayRemove(invitation.id)
+      invitations: FieldValue.arrayRemove(invitation.id),
+      lastUpdated: FieldValue.serverTimestamp(),
     });
   }
   
@@ -69,7 +71,8 @@ export class Group {
     transaction.update(this.ref, {
       users: FieldValue.arrayRemove(uid),
       admins: this.data.admins,
-      profiles: this.data.profiles
+      profiles: this.data.profiles,
+      lastUpdated: FieldValue.serverTimestamp(),
     })
   }
 
@@ -110,7 +113,8 @@ export const createInvitation = onCall(async (request) => {
     const invitationRef = services.db.collection("invitations").doc();
     transaction.set(invitationRef, invitationData);
     transaction.update(group.ref, {
-      invitations: FieldValue.arrayUnion(invitationRef.id)
+      invitations: FieldValue.arrayUnion(invitationRef.id),
+      lastUpdated: FieldValue.serverTimestamp(),
     })
 
     return invitationRef.id;

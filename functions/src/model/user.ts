@@ -1,7 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import { FBServices, services } from "./base.js";
 import { Group } from "./group.js";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 const userProfiles = services.db.collection("user_profiles");
 
@@ -12,6 +12,7 @@ export interface UserProfileData {
     displayName: string;
     defaultGroup?: string | null;
     groups?: string[] | null;
+    lastUpdated?: Timestamp | FieldValue | null;
 }
   
 interface RemoveUserData {
@@ -59,7 +60,8 @@ export const removeUser = onCall(async (request) => {
             groups: groups,
             defaultGroup: userData.defaultGroup === data.gid
                 ? (groups && groups.length > 0 ? groups[0] : null)
-                : userData.defaultGroup
+                : userData.defaultGroup,
+            lastUpdated: FieldValue.serverTimestamp()
         });
     });
 });
@@ -97,7 +99,8 @@ export const leaveGroup = onCall(async (request) => {
         const first = remainingGroups.length > 0 ? remainingGroups[0] : null;
         transaction.update(profileRef, {
             groups: remainingGroups,
-            defaultGroup: first
+            defaultGroup: first,
+            lastUpdated: FieldValue.serverTimestamp()
         });
 
         if (group.isEmpty()) {
