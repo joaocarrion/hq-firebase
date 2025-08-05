@@ -157,6 +157,7 @@ export const eraseUser = onCall(async (request) => {
             deletedOn: FieldValue.serverTimestamp(),
             clientIP: clientIP,
             userAgent: userAgent,
+            lastUpdated: FieldValue.serverTimestamp()
         });
 
         transaction.delete(profileRef);
