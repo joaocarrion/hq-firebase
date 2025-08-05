@@ -86,6 +86,7 @@ export const acceptInvitation = onCall(async (request) => {
     };
 
     if (!profileDoc.exists) {
+      // console.log("Creating user profile with lastUpdated: FieldValue.serverTimestamp()");
       transaction.set(profileRef, baseProfile);
     } else {
       const existing = profileDoc.data() as UserProfileData;
@@ -99,6 +100,7 @@ export const acceptInvitation = onCall(async (request) => {
         lastUpdated: FieldValue.serverTimestamp()
       };
 
+      // console.log("Setting user profile with lastUpdated: FieldValue.serverTimestamp()");
       transaction.set(profileRef, updatedProfile, { merge: true });
     }
 
