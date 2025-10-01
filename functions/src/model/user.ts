@@ -2,6 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { FBServices, services } from "./base.js";
 import { Group } from "./group.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 
 const userProfiles = services.db.collection("user_profiles");
 
@@ -141,7 +142,7 @@ export const eraseUser = onCall(async (request) => {
             if (group.isEmpty()) {
                 const ref = services.db.collection("groupsForRemoval").doc(group.gid);
                 transaction.set(ref, {
-                    date: FieldValue.serverTimestamp(),
+                    deletedOn: FieldValue.serverTimestamp(),
                     removedBy: uid
                 });
             }
@@ -179,4 +180,7 @@ export const eraseUser = onCall(async (request) => {
             });
         }
     });
+
+    const auth = getAuth();
+    auth.deleteUser(uid);
 });

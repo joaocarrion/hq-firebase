@@ -16,7 +16,7 @@ export const cleanExpired = onSchedule({
         const groupCutoff = Timestamp.fromDate(new Date(now - 7 * 24 * 60 * 60 * 1000));
         const groupsForRemovalSnapshot = await db
             .collection("groupsForRemoval")
-            .where("date", "<=", groupCutoff)
+            .where("deletedOn", "<=", groupCutoff)
             .select()
             .get();
 
@@ -38,7 +38,7 @@ export const cleanExpired = onSchedule({
         const deletedUsersCutoff = Timestamp.fromDate(new Date(now - 7 * 24 * 60 * 60 * 1000));
         const deletedUsersSnapshot = await db
             .collection("deletedUsers")
-            .where("lastUpdated", "<=", deletedUsersCutoff)
+            .where("deletedOn", "<=", deletedUsersCutoff)
             .select()
             .get();
 
